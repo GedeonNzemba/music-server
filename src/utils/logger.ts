@@ -27,19 +27,6 @@ export const logger = winston.createLogger({
         logFormat
       ),
     }),
-    // File transport for errors
-    new transports.File({ 
-      filename: 'logs/error.log', 
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    // File transport for all logs
-    new transports.File({ 
-      filename: 'logs/combined.log',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
   ],
 });
 
