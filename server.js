@@ -1,11 +1,11 @@
 const express = require('express');
 const AWS = require('aws-sdk');
-const fs = require('fs');
-const path = require('path');
-const mime = require('mime'); // For setting correct content type
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const app = express();
-const port = 3000;
+const port = 3009;
 
 // Configure AWS SDK for Cloudflare R2
 const s3 = new AWS.S3({
@@ -16,7 +16,20 @@ const s3 = new AWS.S3({
   region: 'auto',  // Region is 'auto' for R2
 });
 
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+});
+
 app.get('/list-albums', async (req, res) => {
+    // DATA TYPE
+    // interface Album {
+    //     name: string;
+    //     imageUrl: string;
+    //     totalMusic: number;
+    //   }
+      
+    //   // Type for the array of albums
+    //   type AlbumCollection = Album[];
     try {
         const { limit, offset } = req.query;
         const parsedLimit = limit ? parseInt(limit, 10) : null;
@@ -67,6 +80,19 @@ app.get('/list-albums', async (req, res) => {
 });
 
 app.get('/list-songs', async (req, res) => {
+
+    // DATA TYPE
+    // interface Song {
+    //     title: string;
+    //     album: string;
+    //     albumImage: string;
+    //     url: string;
+    //   }
+      
+    //   interface MusicCollection {
+    //     totalSongs: number;
+    //     songs: Song[];
+    //   }
     try {
         const { limit, offset, shuffle } = req.query;
         const parsedLimit = limit ? parseInt(limit, 10) : null;
@@ -139,6 +165,20 @@ app.get('/list-songs', async (req, res) => {
 
 
 app.get('/album/:name', async (req, res) => {
+
+// DATA TYPE
+// interface MusicFile {
+//     title: string;
+//     url: string;
+//   }
+  
+//   interface Album {
+//     name: string;
+//     imageUrl: string;
+//     totalMusic: number;
+//     musicFiles: MusicFile[];
+//   }
+
     try {
         const { name } = req.params;
         const { limit, offset } = req.query;
@@ -187,6 +227,8 @@ app.get('/album/:name', async (req, res) => {
 });
 
 app.get('/stream-song/:album/:song', async (req, res) => {
+    // DATA TYPE
+    // IT WILL PLAY THE SONG
     const { album, song } = req.params;
     const fileKey = `albums/${album}/${song}.mp3`; // Path to the file in R2
 
@@ -231,6 +273,9 @@ app.get('/stream-song/:album/:song', async (req, res) => {
 });
 
 app.get('/download-song/:album/:song', async (req, res) => {
+    // DATA TYPE
+    // IT WILL DOWNLOAD THE SONG
+
     const { album, song } = req.params;
     const fileKey = `albums/${album}/${song}.mp3`;
 
