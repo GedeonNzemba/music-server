@@ -11,7 +11,9 @@ class AdminController {
         try {
             const prefix = req.query.prefix || '';
             const delimiter = req.query.delimiter;
+            logger_1.logger.info(`Listing objects with prefix: "${prefix}" and delimiter: "${delimiter}"`);
             const objects = await r2Service_1.r2Service.listObjects(prefix, delimiter);
+            logger_1.logger.info(`Found ${objects.Contents?.length || 0} objects and ${objects.CommonPrefixes?.length || 0} common prefixes`);
             res.json({
                 prefix,
                 commonPrefixes: objects.CommonPrefixes || [],
@@ -29,6 +31,11 @@ class AdminController {
     async deleteFile(req, res) {
         try {
             const { key } = req.params;
+            if (!key) {
+                res.status(400).json({ error: 'Key parameter is required' });
+                return;
+            }
+            logger_1.logger.info(`Deleting file with key: ${key}`);
             await r2Service_1.r2Service.deleteFile(key);
             res.json({ message: 'File deleted successfully', key });
         }
@@ -43,7 +50,12 @@ class AdminController {
     async getSignedUrl(req, res) {
         try {
             const { key } = req.params;
+            if (!key) {
+                res.status(400).json({ error: 'Key parameter is required' });
+                return;
+            }
             const expiresIn = req.query.expiresIn ? parseInt(req.query.expiresIn, 10) : 3600;
+            logger_1.logger.info(`Generating signed URL for key: ${key} with expiration: ${expiresIn} seconds`);
             const url = r2Service_1.r2Service.getSignedUrl(key, expiresIn);
             res.json({ url });
         }
