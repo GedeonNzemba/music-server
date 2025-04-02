@@ -139,3 +139,15 @@
 2025-03-29 22:54:12 [info]: ::1 - - [29/Mar/2025:20:54:12 +0000] "GET /api/music/albums/Destination HTTP/1.1" 200 2646 "-" "PostmanRuntime/7.43.3" 
 2025-03-29 22:55:01 [info]: ::1 - - [29/Mar/2025:20:55:01 +0000] "GET /api/music/songs?limit=10&offset=0&shuffle=true HTTP/1.1" 200 3182 "-" "PostmanRuntime/7.43.3" 
 2025-03-29 22:56:15 [info]: ::1 - - [29/Mar/2025:20:56:15 +0000] "GET /api/music/stream/Destination/Jean%20Sylvain%20Akoula%20Temple%20-%20Tala%20Be%20Na HTTP/1.1" 400 38 "-" "PostmanRuntime/7.43.3" 
+2025-04-02 16:48:04 [info]: Server running in development mode on port 3010 
+2025-04-02 16:48:04 [info]: Admin interface available at http://localhost:3010/admin 
+2025-04-02 16:48:04 [info]: API endpoints available at http://localhost:3010/api 
+2025-04-02 16:48:44 [warn]: Route not found: GET /api/ 
+2025-04-02 16:48:44 [info]: ::1 - - [02/Apr/2025:14:48:44 +0000] "GET /api/ HTTP/1.1" 404 50 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" 
+2025-04-02 16:48:45 [warn]: Route not found: GET /favicon.ico 
+2025-04-02 16:48:45 [info]: ::1 - - [02/Apr/2025:14:48:45 +0000] "GET /favicon.ico HTTP/1.1" 404 57 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" 
+2025-04-02 16:50:19 [warn]: Route not found: GET /api/albums 
+2025-04-02 16:50:19 [info]: ::1 - - [02/Apr/2025:14:50:19 +0000] "GET /api/albums HTTP/1.1" 404 56 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" 
+2025-04-02 16:51:33 [info]: ::1 - - [02/Apr/2025:14:51:33 +0000] "GET /api/music/albums HTTP/1.1" 200 2365 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" 
+2025-04-02 16:51:33 [warn]: Route not found: GET /robots.txt?484334 
+2025-04-02 16:51:33 [info]: ::1 - - [02/Apr/2025:14:51:33 +0000] "GET /robots.txt?484334 HTTP/1.1" 404 63 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" 
