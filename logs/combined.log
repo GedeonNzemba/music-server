@@ -151,3 +151,38 @@
 2025-04-02 16:51:33 [info]: ::1 - - [02/Apr/2025:14:51:33 +0000] "GET /api/music/albums HTTP/1.1" 200 2365 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" 
 2025-04-02 16:51:33 [warn]: Route not found: GET /robots.txt?484334 
 2025-04-02 16:51:33 [info]: ::1 - - [02/Apr/2025:14:51:33 +0000] "GET /robots.txt?484334 HTTP/1.1" 404 63 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" 
+2025-04-03 00:13:13 [warn]: Route not found: GET /api/music/album/Destination/ 
+2025-04-03 00:13:13 [info]: ::1 - - [02/Apr/2025:22:13:13 +0000] "GET /api/music/album/Destination/ HTTP/1.1" 404 74 "-" "PostmanRuntime/7.43.3" 
+2025-04-03 00:13:21 [info]: ::1 - - [02/Apr/2025:22:13:21 +0000] "GET /api/music/albums/Destination/ HTTP/1.1" 200 2646 "-" "PostmanRuntime/7.43.3" 
+2025-04-03 00:14:10 [info]: ::1 - - [02/Apr/2025:22:14:10 +0000] "GET /api/music/albums/A%20Joyful%20Noise/ HTTP/1.1" 200 4355 "-" "PostmanRuntime/7.43.3" 
+2025-04-05 21:56:21 [info]: Server running in development mode on port 3010 
+2025-04-05 21:56:21 [info]: Admin interface available at http://localhost:3010/admin 
+2025-04-05 21:56:21 [info]: API endpoints available at http://localhost:3010/api 
+2025-04-05 21:59:36 [info]: ::1 - - [05/Apr/2025:19:59:36 +0000] "GET /admin HTTP/1.1" 301 155 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 21:59:36 [info]: ::1 - - [05/Apr/2025:19:59:36 +0000] "GET /admin/ HTTP/1.1" 200 12826 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 21:59:36 [info]: ::1 - - [05/Apr/2025:19:59:36 +0000] "GET /admin/js/admin.js HTTP/1.1" 200 26374 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 21:59:36 [info]: Listing objects with prefix: "" and delimiter: "/" 
+2025-04-05 21:59:37 [warn]: Route not found: GET /favicon.ico 
+2025-04-05 21:59:37 [info]: ::1 - - [05/Apr/2025:19:59:37 +0000] "GET /favicon.ico HTTP/1.1" 404 57 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 21:59:37 [info]: Found 0 objects and 1 common prefixes 
+2025-04-05 21:59:37 [info]: ::1 - - [05/Apr/2025:19:59:37 +0000] "GET /api/admin/objects?prefix=&delimiter=/ HTTP/1.1" 200 67 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 21:59:52 [warn]: Route not found: GET /api 
+2025-04-05 21:59:52 [info]: ::1 - - [05/Apr/2025:19:59:52 +0000] "GET /api HTTP/1.1" 404 49 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 22:01:46 [info]: ::1 - - [05/Apr/2025:20:01:46 +0000] "GET /admin/ HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 22:01:46 [info]: ::1 - - [05/Apr/2025:20:01:46 +0000] "GET /admin/js/admin.js HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 22:01:46 [info]: Listing objects with prefix: "" and delimiter: "/" 
+2025-04-05 22:01:47 [info]: Found 0 objects and 1 common prefixes 
+2025-04-05 22:01:47 [info]: ::1 - - [05/Apr/2025:20:01:47 +0000] "GET /api/admin/objects?prefix=&delimiter=/ HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 22:02:01 [info]: Listing objects with prefix: "" and delimiter: "/" 
+2025-04-05 22:02:01 [info]: Found 0 objects and 1 common prefixes 
+2025-04-05 22:02:01 [info]: ::1 - - [05/Apr/2025:20:02:01 +0000] "GET /api/admin/objects?prefix=&delimiter=/ HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 22:02:59 [info]: Listing objects with prefix: "albums/" and delimiter: "/" 
+2025-04-05 22:03:00 [info]: Found 0 objects and 21 common prefixes 
+2025-04-05 22:03:00 [info]: ::1 - - [05/Apr/2025:20:03:00 +0000] "GET /api/admin/objects?prefix=albums%2F&delimiter=/ HTTP/1.1" 200 824 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 22:03:18 [info]: Listing objects with prefix: "albums/Worship/" and delimiter: "/" 
+2025-04-05 22:03:18 [info]: Found 60 objects and 0 common prefixes 
+2025-04-05 22:03:18 [info]: ::1 - - [05/Apr/2025:20:03:18 +0000] "GET /api/admin/objects?prefix=albums%2FWorship%2F&delimiter=/ HTTP/1.1" 200 12462 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 22:03:33 [warn]: Route not found: GET /api/admin/objects/albums%2FWorship%2FEmmanuel.mp3/metadata 
+2025-04-05 22:03:33 [info]: ::1 - - [05/Apr/2025:20:03:33 +0000] "GET /api/admin/objects/albums%2FWorship%2FEmmanuel.mp3/metadata HTTP/1.1" 404 104 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 
+2025-04-05 22:03:53 [warn]: Route not found: GET /api/admin/objects/albums%2FWorship%2FEmmanuel.mp3/metadata 
+2025-04-05 22:03:53 [info]: ::1 - - [05/Apr/2025:20:03:53 +0000] "GET /api/admin/objects/albums%2FWorship%2FEmmanuel.mp3/metadata HTTP/1.1" 404 104 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" 

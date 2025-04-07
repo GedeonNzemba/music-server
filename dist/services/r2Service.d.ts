@@ -12,6 +12,14 @@ export interface Album {
     totalMusic: number;
     musicFiles?: MusicFile[];
 }
+export interface Metadata {
+    artist: string;
+    album: string;
+    year: string;
+    genre: string;
+    copyright: string;
+    [key: string]: string;
+}
 export interface Song {
     title: string;
     album: string;
@@ -20,6 +28,7 @@ export interface Song {
     key: string;
     size?: number;
     lastModified?: Date;
+    metadata?: Metadata;
 }
 export interface MusicCollection {
     totalSongs: number;
@@ -28,6 +37,10 @@ export interface MusicCollection {
 export declare class R2Service {
     private bucketName;
     private publicUrl;
+    endpoint: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
     constructor();
     /**
      * List all albums in the R2 bucket
@@ -70,5 +83,17 @@ export declare class R2Service {
      * Delete a file from R2
      */
     deleteFile(key: string): Promise<AWS.S3.DeleteObjectOutput>;
+    /**
+     * Get an object from R2
+     */
+    getObject(key: string): Promise<AWS.S3.GetObjectOutput>;
+    /**
+     * Get metadata for a file in R2
+     */
+    getMetadata(key: string): Promise<Record<string, string>>;
+    /**
+     * Update metadata for a file in R2
+     */
+    updateMetadata(key: string, metadata: Record<string, string>): Promise<AWS.S3.CopyObjectOutput>;
 }
 export declare const r2Service: R2Service;

@@ -19,7 +19,9 @@
   "license": "ISC",
   "description": "Music API server with Cloudflare R2 integration",
   "dependencies": {
+    "@types/archiver": "^6.0.3",
     "@types/multer": "^1.4.12",
+    "archiver": "^7.0.1",
     "aws-sdk": "^2.1692.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

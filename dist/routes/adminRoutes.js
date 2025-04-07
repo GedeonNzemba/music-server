@@ -9,6 +9,16 @@ const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const r2Service_1 = require("../services/r2Service");
 const logger_1 = require("../utils/logger");
+const archiver_1 = __importDefault(require("archiver"));
+// Utility function to convert a stream to a string
+async function streamToString(stream) {
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+        stream.on('error', (err) => reject(err));
+        stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+}
 const router = (0, express_1.Router)();
 // Configure multer for file uploads
 const storage = multer_1.default.memoryStorage();
@@ -54,28 +64,84 @@ router.delete('/objects/:key', adminController_1.adminController.deleteFile.bind
  * @desc    Upload a file to R2
  * @access  Admin
  */
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', upload.array('files'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
         }
-        const file = req.file;
+        const files = req.files;
         const targetPath = req.body.path || '';
-        const fileName = req.body.fileName || file.originalname;
-        // Determine content type
-        const contentType = file.mimetype;
-        // Construct the key (file path in R2)
-        const key = path_1.default.join(targetPath, fileName).replace(/\\/g, '/');
-        // Upload to R2
-        const result = await r2Service_1.r2Service.uploadFile(key, file.buffer, contentType);
+        const applyAlbumMetadata = req.body.applyAlbumMetadata === 'true';
+        const albumName = req.body.albumName;
+        // Check if we need to apply album metadata
+        let albumMetadata = null;
+        if (targetPath.startsWith('albums/')) {
+            try {
+                // Extract album name from the path
+                const pathParts = targetPath.split('/');
+                const albumName = pathParts[1]; // albums/albumName/
+                if (albumName) {
+                    // First try to get the album.json file directly
+                    try {
+                        const albumJsonKey = `albums/${albumName}/album.json`;
+                        const albumJsonObj = await r2Service_1.r2Service.getObject(albumJsonKey);
+                        if (albumJsonObj && albumJsonObj.Body) {
+                            // Parse the JSON content
+                            const albumJsonContent = await streamToString(albumJsonObj.Body);
+                            const albumData = JSON.parse(albumJsonContent);
+                            if (albumData) {
+                                // Remove the albumName property if it exists
+                                const { albumName: _, ...metadataOnly } = albumData;
+                                albumMetadata = metadataOnly;
+                                logger_1.logger.info(`Found album metadata in album.json for ${albumName}`, { albumMetadata });
+                            }
+                        }
+                    }
+                    catch (jsonErr) {
+                        logger_1.logger.warn(`Could not read album.json for ${albumName}`, { error: jsonErr });
+                        // Fallback: try to get metadata from the album.json file's metadata
+                        try {
+                            const albumJsonKey = `albums/${albumName}/album.json`;
+                            albumMetadata = await r2Service_1.r2Service.getMetadata(albumJsonKey);
+                            logger_1.logger.info(`Found album metadata from album.json metadata for ${albumName}`, { albumMetadata });
+                        }
+                        catch (metadataErr) {
+                            logger_1.logger.warn(`No album metadata found for ${albumName}`);
+                        }
+                    }
+                }
+            }
+            catch (err) {
+                logger_1.logger.warn(`Error processing album metadata`, { error: err });
+            }
+        }
+        // Process each file
+        const uploadResults = await Promise.all(files.map(async (file) => {
+            const fileName = file.originalname;
+            const contentType = file.mimetype;
+            // Construct the key (file path in R2)
+            const key = path_1.default.join(targetPath, fileName).replace(/\\/g, '/');
+            // Upload to R2
+            const result = await r2Service_1.r2Service.uploadFile(key, file.buffer, contentType);
+            // If this is an MP3 file and we have album metadata, apply it
+            if (albumMetadata && (contentType === 'audio/mpeg' || contentType === 'audio/mp3' || fileName.toLowerCase().endsWith('.mp3'))) {
+                await r2Service_1.r2Service.updateMetadata(key, albumMetadata);
+                logger_1.logger.info(`Applied album metadata to ${fileName}`);
+            }
+            return {
+                originalName: fileName,
+                key: result.Key,
+                url: r2Service_1.r2Service.getSignedUrl(result.Key),
+                metadataApplied: albumMetadata && (contentType === 'audio/mpeg' || contentType === 'audio/mp3')
+            };
+        }));
         res.json({
-            message: 'File uploaded successfully',
-            key: result.Key,
-            url: `${r2Service_1.r2Service.getSignedUrl(result.Key)}`
+            message: `${uploadResults.length} file(s) uploaded successfully`,
+            files: uploadResults
         });
     }
     catch (error) {
-        logger_1.logger.error('Error uploading file', { error });
+        logger_1.logger.error('Error uploading files', { error });
         res.status(500).json({ error: error.message });
     }
 });
@@ -86,21 +152,280 @@ router.post('/upload', upload.single('file'), async (req, res) => {
  */
 router.post('/create-album', async (req, res) => {
     try {
-        const { albumName } = req.body;
-        if (!albumName) {
+        const { name, metadata } = req.body;
+        if (!name) {
             return res.status(400).json({ error: 'Album name is required' });
         }
         // Create an empty file to represent the folder (S3 doesn't have real folders)
-        const key = `albums/${albumName}/.folder`;
-        await r2Service_1.r2Service.uploadFile(key, '', 'application/octet-stream');
+        const folderKey = `albums/${name}/.folder`;
+        await r2Service_1.r2Service.uploadFile(folderKey, '', 'application/octet-stream');
+        // If metadata was provided, create an album.json file with the metadata
+        if (metadata && typeof metadata === 'object') {
+            const albumJsonKey = `albums/${name}/album.json`;
+            // Create a JSON file with album metadata
+            const albumData = JSON.stringify({ albumName: name, ...metadata }, null, 2);
+            await r2Service_1.r2Service.uploadFile(albumJsonKey, albumData, 'application/json');
+            // Also store the metadata as object metadata on the album.json file itself
+            // This makes it easily accessible via the metadata API
+            await r2Service_1.r2Service.updateMetadata(albumJsonKey, metadata);
+            logger_1.logger.info(`Created album ${name} with metadata`, { metadata });
+        }
+        else {
+            logger_1.logger.info(`Created album ${name} without metadata`);
+        }
         res.json({
             message: 'Album created successfully',
-            albumName,
-            path: `albums/${albumName}/`
+            albumName: name,
+            path: `albums/${name}/`,
+            metadata: metadata || null
         });
     }
     catch (error) {
         logger_1.logger.error('Error creating album', { error });
+        res.status(500).json({ error: error.message });
+    }
+});
+/**
+ * @route   GET /api/admin/objects/:key/metadata
+ * @desc    Get metadata for a file in R2
+ * @access  Admin
+ */
+router.get('/objects/:key/metadata', (req, res) => {
+    logger_1.logger.info(`Metadata GET request received for key: ${req.params.key}`);
+    adminController_1.adminController.getMetadata(req, res);
+});
+/**
+ * @route   PUT /api/admin/objects/:key/metadata
+ * @desc    Update metadata for a file in R2
+ * @access  Admin
+ */
+router.put('/objects/:key/metadata', (req, res) => {
+    logger_1.logger.info(`Metadata PUT request received for key: ${req.params.key}`);
+    adminController_1.adminController.updateMetadata(req, res);
+});
+/**
+ * @route   PUT /api/admin/albums/:albumName/apply-metadata
+ * @desc    Apply metadata to all songs in an album
+ * @access  Admin
+ */
+router.put('/albums/:albumName/apply-metadata', (req, res) => {
+    logger_1.logger.info(`Apply metadata to all songs in album: ${req.params.albumName}`);
+    adminController_1.adminController.applyMetadataToAlbum(req, res);
+});
+// Track download progress globally
+let downloadProgress = 0;
+let totalFilesCount = 0;
+let processedFilesCount = 0;
+/**
+ * @route   GET /api/admin/download-all-albums
+ * @desc    Download all albums as a zip file
+ * @access  Admin
+ */
+// Add a dedicated HEAD route for progress checking
+router.head('/download-all-albums', (req, res) => {
+    logger_1.logger.info(`Download progress check: ${downloadProgress}%, ${processedFilesCount}/${totalFilesCount} files processed`);
+    // If download hasn't started yet but we're checking progress, initialize values
+    if (totalFilesCount === 0) {
+        // Set some initial values to indicate we're preparing
+        downloadProgress = 5;
+        totalFilesCount = 1;
+        processedFilesCount = 0;
+    }
+    res.setHeader('X-Progress', downloadProgress.toString());
+    res.setHeader('X-Total-Files', totalFilesCount.toString());
+    res.setHeader('X-Processed-Files', processedFilesCount.toString());
+    return res.status(200).end();
+});
+router.get('/download-all-albums', async (req, res) => {
+    try {
+        logger_1.logger.info('Starting download of all albums as zip');
+        // Create a zip archive
+        const archive = (0, archiver_1.default)('zip', {
+            zlib: { level: 5 } // Compression level (1-9)
+        });
+        // Set the appropriate headers for a zip file download
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=all-albums.zip');
+        // Handle archive warnings
+        archive.on('warning', (err) => {
+            if (err.code === 'ENOENT') {
+                logger_1.logger.warn('Archive warning:', err);
+            }
+            else {
+                logger_1.logger.error('Archive error:', err);
+                throw err;
+            }
+        });
+        // Handle archive errors
+        archive.on('error', (err) => {
+            logger_1.logger.error('Archive error:', err);
+            throw err;
+        });
+        // Pipe the archive data to the response
+        archive.pipe(res);
+        // List all albums
+        const objects = await r2Service_1.r2Service.listObjects('albums/');
+        if (!objects.Contents || objects.Contents.length === 0) {
+            throw new Error('No albums found');
+        }
+        // Get all album folders
+        const albumFolders = new Set();
+        objects.Contents.forEach(obj => {
+            if (obj.Key) {
+                const parts = obj.Key.split('/');
+                if (parts.length >= 2 && parts[0] === 'albums' && parts[1]) {
+                    albumFolders.add(parts[1]);
+                }
+            }
+        });
+        logger_1.logger.info(`Found ${albumFolders.size} albums to download`);
+        // Check if we have any albums to download
+        if (albumFolders.size === 0) {
+            logger_1.logger.warn('No albums found to download');
+            return res.status(404).json({ error: 'No albums found to download' });
+        }
+        // Count total files for progress tracking
+        totalFilesCount = 0;
+        processedFilesCount = 0;
+        downloadProgress = 0;
+        // First count all files
+        for (const albumName of albumFolders) {
+            const albumPrefix = `albums/${albumName}/`;
+            const albumObjects = await r2Service_1.r2Service.listObjects(albumPrefix);
+            if (albumObjects.Contents) {
+                totalFilesCount += albumObjects.Contents.filter(obj => obj.Key && !obj.Key.endsWith('/.folder')).length;
+            }
+        }
+        logger_1.logger.info(`Total files to process: ${totalFilesCount}`);
+        // Process each album
+        for (const albumName of albumFolders) {
+            // List all files in the album
+            const albumPrefix = `albums/${albumName}/`;
+            const albumObjects = await r2Service_1.r2Service.listObjects(albumPrefix);
+            logger_1.logger.info(`Processing album: ${albumName} (${albumObjects.Contents?.length || 0} files)`);
+            if (albumObjects.Contents && albumObjects.Contents.length > 0) {
+                // Process each file in the album
+                for (const obj of albumObjects.Contents) {
+                    if (obj.Key) {
+                        // Skip folder markers
+                        if (obj.Key.endsWith('/.folder'))
+                            continue;
+                        try {
+                            // Get the file from R2
+                            const file = await r2Service_1.r2Service.getObject(obj.Key);
+                            if (file && file.Body) {
+                                // Convert stream to buffer for archiver
+                                const chunks = [];
+                                for await (const chunk of file.Body) {
+                                    chunks.push(Buffer.from(chunk));
+                                }
+                                const fileBuffer = Buffer.concat(chunks);
+                                // Add the file to the archive with the same path structure
+                                archive.append(fileBuffer, { name: obj.Key });
+                                processedFilesCount++;
+                                downloadProgress = Math.round((processedFilesCount / totalFilesCount) * 100);
+                                logger_1.logger.info(`Added ${obj.Key} to zip archive (${processedFilesCount}/${totalFilesCount}, ${downloadProgress}%)`);
+                            }
+                        }
+                        catch (fileErr) {
+                            logger_1.logger.error(`Error adding file to archive: ${obj.Key}`, { error: fileErr });
+                            // Continue with other files even if one fails
+                            processedFilesCount++;
+                            downloadProgress = Math.round((processedFilesCount / totalFilesCount) * 100);
+                        }
+                    }
+                }
+            }
+        }
+        // Finalize the archive
+        await archive.finalize();
+        logger_1.logger.info('All albums zip archive created successfully');
+    }
+    catch (error) {
+        logger_1.logger.error('Error creating zip archive of all albums', { error });
+        res.status(500).json({ error: error.message });
+    }
+});
+/**
+ * @route   GET /api/admin/download-album/:albumName
+ * @desc    Download a specific album as a zip file
+ * @access  Admin
+ */
+router.get('/download-album/:albumName', async (req, res) => {
+    try {
+        const albumName = req.params.albumName;
+        if (!albumName) {
+            return res.status(400).json({ error: 'Album name is required' });
+        }
+        logger_1.logger.info(`Starting download of album: ${albumName}`);
+        // Create a zip archive
+        const archive = (0, archiver_1.default)('zip', {
+            zlib: { level: 5 } // Compression level (1-9)
+        });
+        // Set the appropriate headers for a zip file download
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(albumName)}.zip`);
+        // Handle archive warnings
+        archive.on('warning', (err) => {
+            if (err.code === 'ENOENT') {
+                logger_1.logger.warn('Archive warning:', err);
+            }
+            else {
+                logger_1.logger.error('Archive error:', err);
+                throw err;
+            }
+        });
+        // Handle archive errors
+        archive.on('error', (err) => {
+            logger_1.logger.error('Archive error:', err);
+            throw err;
+        });
+        // Pipe the archive data to the response
+        archive.pipe(res);
+        // List all files in the album
+        const albumPrefix = `albums/${albumName}/`;
+        const albumObjects = await r2Service_1.r2Service.listObjects(albumPrefix);
+        if (!albumObjects.Contents || albumObjects.Contents.length === 0) {
+            throw new Error(`No files found in album: ${albumName}`);
+        }
+        logger_1.logger.info(`Processing album: ${albumName} (${albumObjects.Contents.length} files)`);
+        // Process each file in the album
+        for (const obj of albumObjects.Contents) {
+            if (obj.Key) {
+                // Skip folder markers
+                if (obj.Key.endsWith('/.folder'))
+                    continue;
+                try {
+                    // Get the file from R2
+                    const file = await r2Service_1.r2Service.getObject(obj.Key);
+                    if (file && file.Body) {
+                        try {
+                            // Get the file as a readable stream
+                            const stream = file.Body;
+                            // Add the file to the archive with a simplified path structure
+                            // Remove the 'albums/albumName/' prefix to make the zip cleaner
+                            const relativePath = obj.Key.replace(albumPrefix, '');
+                            // Append the stream directly to the archive
+                            archive.append(stream, { name: relativePath });
+                            logger_1.logger.info(`Added ${obj.Key} to zip archive`);
+                        }
+                        catch (streamErr) {
+                            logger_1.logger.error(`Error processing stream for ${obj.Key}:`, streamErr);
+                        }
+                    }
+                }
+                catch (fileErr) {
+                    logger_1.logger.error(`Error adding file to archive: ${obj.Key}`, { error: fileErr });
+                    // Continue with other files even if one fails
+                }
+            }
+        }
+        // Finalize the archive
+        await archive.finalize();
+        logger_1.logger.info(`Album ${albumName} zip archive created successfully`);
+    }
+    catch (error) {
+        logger_1.logger.error(`Error creating zip archive for album: ${req.params.albumName}`, { error });
         res.status(500).json({ error: error.message });
     }
 });

@@ -63,6 +63,21 @@
         #audio-player {
             width: 100%;
         }
+        .custom-metadata-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        .custom-metadata-row .btn-remove-field {
+            margin-left: 8px;
+        }
+        #metadata-status {
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .metadata-button {
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body>
@@ -92,8 +107,11 @@
                             <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#create-album-modal">
                                 <i class="bi bi-folder-plus"></i> Create Album
                             </button>
-                            <button class="btn btn-secondary" id="refresh-btn">
+                            <button class="btn btn-secondary me-2" id="refresh-btn">
                                 <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <button class="btn btn-primary me-2" id="create-folder-btn" data-bs-toggle="modal" data-bs-target="#create-folder-modal">
+                                <i class="bi bi-folder-plus"></i> Create Folder
                             </button>
                         </div>
 
@@ -145,7 +163,7 @@
 
     <!-- Create Album Modal -->
     <div class="modal fade" id="create-album-modal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Create New Album</h5>
@@ -155,6 +173,41 @@
                     <div class="mb-3">
                         <label for="album-name" class="form-label">Album Name</label>
                         <input type="text" class="form-control" id="album-name" placeholder="Enter album name">
+                    </div>
+                    
+                    <div class="mt-4 mb-2">
+                        <h6>Album Metadata (will be inherited by songs)</h6>
+                        <p class="text-muted small">These metadata values will be automatically applied to all songs in this album.</p>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="album-artist" class="form-label">Artist</label>
+                            <input type="text" class="form-control" id="album-artist" placeholder="Artist name">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="album-year" class="form-label">Year</label>
+                            <input type="text" class="form-control" id="album-year" placeholder="Release year">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="album-genre" class="form-label">Genre</label>
+                            <input type="text" class="form-control" id="album-genre" placeholder="Music genre">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="album-copyright" class="form-label">Copyright</label>
+                            <input type="text" class="form-control" id="album-copyright" placeholder="Copyright info">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Custom Album Metadata</label>
+                        <div id="album-custom-metadata-fields">
+                            <!-- Custom metadata fields will be added here -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-album-metadata-field">
+                            <i class="bi bi-plus-circle"></i> Add Custom Field
+                        </button>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -199,6 +252,91 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metadata Modal -->
+    <div class="modal fade" id="metadata-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Metadata</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="metadata-file-info" class="mb-3 p-3 bg-light rounded">
+                        <h6 class="mb-1">File: <span id="metadata-filename" class="fw-bold"></span></h6>
+                        <small id="metadata-filepath" class="text-muted"></small>
+                    </div>
+                    
+                    <form id="metadata-form">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="metadata-artist" class="form-label">Artist</label>
+                                <input type="text" class="form-control" id="metadata-artist" name="artist" placeholder="Artist name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="metadata-album" class="form-label">Album</label>
+                                <input type="text" class="form-control" id="metadata-album" name="album" placeholder="Album name">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="metadata-year" class="form-label">Year</label>
+                                <input type="text" class="form-control" id="metadata-year" name="year" placeholder="Release year">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="metadata-genre" class="form-label">Genre</label>
+                                <input type="text" class="form-control" id="metadata-genre" name="genre" placeholder="Music genre">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="metadata-copyright" class="form-label">Copyright</label>
+                                <input type="text" class="form-control" id="metadata-copyright" name="copyright" placeholder="Copyright info">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Custom Metadata</label>
+                            <div id="custom-metadata-fields">
+                                <!-- Custom metadata fields will be added here -->
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-metadata-field">
+                                <i class="bi bi-plus-circle"></i> Add Custom Field
+                            </button>
+                        </div>
+                    </form>
+                    <div id="metadata-status" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-metadata-btn">Save Metadata</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div class="modal fade" id="create-folder-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Folder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="folder-name" class="form-label">Folder Name</label>
+                        <input type="text" class="form-control" id="folder-name" placeholder="Enter folder name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="folder-path" class="form-label">Current Path</label>
+                        <input type="text" class="form-control" id="folder-path" readonly>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="create-folder-submit-btn">Create Folder</button>
                 </div>
             </div>
         </div>

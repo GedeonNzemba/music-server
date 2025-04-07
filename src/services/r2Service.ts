@@ -26,6 +26,15 @@ export interface Album {
   musicFiles?: MusicFile[];
 }
 
+export interface Metadata {
+  artist: string;
+  album: string;
+  year: string;
+  genre: string;
+  copyright: string;
+  [key: string]: string;
+}
+
 export interface Song {
   title: string;
   album: string;
@@ -34,6 +43,7 @@ export interface Song {
   key: string;
   size?: number;
   lastModified?: Date;
+  metadata?: Metadata;
 }
 
 export interface MusicCollection {
@@ -44,10 +54,18 @@ export interface MusicCollection {
 export class R2Service {
   private bucketName: string;
   private publicUrl: string;
+  public endpoint: string;
+  public accessKeyId: string;
+  public secretAccessKey: string;
+  public region: string;
 
   constructor() {
     this.bucketName = env.R2.BUCKET_NAME;
     this.publicUrl = env.R2.PUBLIC_URL;
+    this.endpoint = env.R2.ENDPOINT;
+    this.accessKeyId = env.R2.ACCESS_KEY_ID;
+    this.secretAccessKey = env.R2.SECRET_ACCESS_KEY;
+    this.region = env.R2.REGION;
   }
 
   /**
@@ -345,6 +363,158 @@ export class R2Service {
       }).promise();
     } catch (error) {
       logger.error(`Error deleting file ${key}`, { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Get an object from R2
+   */
+  async getObject(key: string): Promise<AWS.S3.GetObjectOutput> {
+    try {
+      return await s3.getObject({
+        Bucket: this.bucketName,
+        Key: key
+      }).promise();
+    } catch (error) {
+      logger.error(`Error getting object ${key}`, { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Get metadata for a file in R2
+   */
+  async getMetadata(key: string): Promise<Record<string, string>> {
+    try {
+      const data = await s3.headObject({
+        Bucket: this.bucketName,
+        Key: key
+      }).promise();
+      
+      // Extract metadata from the response
+      const metadata: Record<string, string> = {};
+      if (data.Metadata) {
+        // Log the raw metadata for debugging
+        logger.info(`Raw metadata for ${key}:`, { rawMetadata: data.Metadata });
+        
+        // Process each metadata entry
+        Object.entries(data.Metadata).forEach(([key, value]) => {
+          if (value) {
+            // Store the metadata with the original key (lowercase)
+            metadata[key.toLowerCase()] = value;
+          }
+        });
+      }
+      
+      // If this is an MP3 file, check for standard ID3-like metadata fields
+      if (key.toLowerCase().endsWith('.mp3')) {
+        // Map common metadata fields that might be in different formats
+        const standardFields = ['artist', 'album', 'year', 'genre', 'copyright', 'title'];
+        standardFields.forEach(field => {
+          // If we don't have the standard field but have it with a prefix, use that
+          if (!metadata[field]) {
+            // Check for prefixed versions (e.g., 'x-amz-meta-artist')
+            Object.entries(data.Metadata || {}).forEach(([metaKey, metaValue]) => {
+              if (metaValue && metaKey.toLowerCase().includes(field)) {
+                metadata[field] = metaValue;
+              }
+            });
+          }
+        });
+      }
+      
+      logger.info(`Processed metadata for ${key}:`, { metadata });
+      return metadata;
+    } catch (error) {
+      logger.error(`Error getting metadata for file ${key}`, { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Update metadata for a file in R2
+   */
+  async updateMetadata(key: string, metadata: Record<string, string>): Promise<AWS.S3.CopyObjectOutput> {
+    try {
+      logger.info(`Starting metadata update for ${key}`);
+      logger.info(`Received metadata:`, { metadata });
+      
+      // Get the existing object to preserve its content type and metadata
+      const existingObject = await s3.headObject({
+        Bucket: this.bucketName,
+        Key: key
+      }).promise();
+      
+      // Create a clean metadata object
+      const cleanedMetadata: AWS.S3.Metadata = {};
+      
+      // First, copy any existing metadata we want to preserve
+      const existingMetadata = existingObject.Metadata || {};
+      logger.info(`Retrieved existing metadata for ${key}:`, { existingMetadata });
+      
+      // Track which fields should be removed
+      const fieldsToRemove = new Set<string>();
+      
+      // Identify fields to remove (empty string values)
+      Object.entries(metadata).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) {
+          const lowerKey = k.toLowerCase();
+          const stringValue = String(v).trim();
+          
+          if (stringValue === '') {
+            logger.info(`Marking field for removal: ${lowerKey}`);
+            fieldsToRemove.add(lowerKey);
+          }
+        }
+      });
+      
+      // Copy existing metadata, excluding fields marked for removal
+      Object.entries(existingMetadata).forEach(([k, v]) => {
+        const lowerKey = k.toLowerCase();
+        if (!fieldsToRemove.has(lowerKey) && v !== undefined && v !== null) {
+          cleanedMetadata[lowerKey] = String(v);
+        } else if (fieldsToRemove.has(lowerKey)) {
+          logger.info(`Skipping field marked for removal: ${lowerKey}`);
+        }
+      });
+      
+      // Then apply new metadata, overwriting existing values (but not adding back removed fields)
+      Object.entries(metadata).forEach(([k, v]) => {
+        const lowerKey = k.toLowerCase();
+        
+        // Skip undefined/null values and empty strings (removals)
+        if (v === undefined || v === null || String(v).trim() === '') return;
+        
+        const stringValue = String(v).trim();
+        // Add/update the field
+        cleanedMetadata[lowerKey] = stringValue;
+      });
+      
+      // Ensure album name is set if we're in an album folder
+      if (!cleanedMetadata['album'] && key.startsWith('albums/')) {
+        const albumName = key.split('/')[1];
+        if (albumName) {
+          cleanedMetadata['album'] = albumName;
+        }
+      }
+      
+      logger.info(`Applying final metadata to ${key}:`, { metadata: cleanedMetadata });
+      
+      // Copy the object to itself with new metadata
+      const result = await s3.copyObject({
+        Bucket: this.bucketName,
+        CopySource: `${this.bucketName}/${encodeURIComponent(key)}`,
+        Key: key,
+        Metadata: cleanedMetadata,
+        MetadataDirective: 'REPLACE',
+        ContentType: existingObject.ContentType
+      }).promise();
+      
+      logger.info(`Successfully updated metadata for ${key}`);
+      return result;
+    } catch (error) {
+      logger.error(`Error updating metadata for file ${key}`, { error });
       throw error;
     }
   }

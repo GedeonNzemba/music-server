@@ -12,5 +12,17 @@ export declare class AdminController {
      * Get signed URL for a file (for admin preview)
      */
     getSignedUrl(req: Request, res: Response): Promise<void>;
+    /**
+     * Get metadata for a file in R2
+     */
+    getMetadata(req: Request, res: Response): Promise<void>;
+    /**
+     * Update metadata for a file in R2
+     */
+    updateMetadata(req: Request, res: Response): Promise<void>;
+    /**
+     * Apply metadata to all songs in an album
+     */
+    applyMetadataToAlbum(req: Request, res: Response): Promise<void>;
 }
 export declare const adminController: AdminController;
