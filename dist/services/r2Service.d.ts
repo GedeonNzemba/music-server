@@ -10,6 +10,7 @@ export interface Album {
     name: string;
     imageUrl: string;
     totalMusic: number;
+    artist?: string;
     musicFiles?: MusicFile[];
 }
 export interface Metadata {
@@ -24,6 +25,7 @@ export interface Song {
     title: string;
     album: string;
     albumImage: string | null;
+    artist?: string | null;
     url: string;
     key: string;
     size?: number;
@@ -91,6 +93,30 @@ export declare class R2Service {
      * Get metadata for a file in R2
      */
     getMetadata(key: string): Promise<Record<string, string>>;
+    /**
+     * List all artists based on album metadata
+     */
+    listArtists(): Promise<{
+        artists: Array<{
+            name: string;
+            albums: number;
+        }>;
+    }>;
+    /**
+     * Get albums by artist name
+     */
+    getAlbumsByArtist(artistName: string, limit?: number, offset?: number): Promise<{
+        artist: string;
+        albums: Album[];
+    }>;
+    /**
+     * Get all songs by artist name
+     */
+    getSongsByArtist(artistName: string, limit?: number, offset?: number, shuffle?: boolean): Promise<{
+        artist: string;
+        totalSongs: number;
+        songs: Song[];
+    }>;
     /**
      * Update metadata for a file in R2
      */

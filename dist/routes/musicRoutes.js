@@ -33,5 +33,23 @@ router.get('/stream/:album/:song', musicController_1.musicController.streamSong.
  * @access  Public
  */
 router.get('/download/:album/:song', musicController_1.musicController.downloadSong.bind(musicController_1.musicController));
+/**
+ * @route   GET /api/music/artists
+ * @desc    Get all artists
+ * @access  Public
+ */
+router.get('/artists', musicController_1.musicController.listArtists.bind(musicController_1.musicController));
+/**
+ * @route   GET /api/music/artists/:name
+ * @desc    Get albums by artist name
+ * @access  Public
+ */
+router.get('/artists/:name', musicController_1.musicController.getAlbumsByArtist.bind(musicController_1.musicController));
+/**
+ * @route   GET /api/music/artists/:name/songs
+ * @desc    Get songs by artist name
+ * @access  Public
+ */
+router.get('/artists/:name/songs', musicController_1.musicController.getSongsByArtist.bind(musicController_1.musicController));
 exports.default = router;
 //# sourceMappingURL=musicRoutes.js.map

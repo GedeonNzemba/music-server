@@ -429,5 +429,34 @@ router.get('/download-album/:albumName', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+/**
+ * @route   POST /api/admin/create-folder
+ * @desc    Create a new folder at any path
+ * @access  Admin
+ */
+router.post('/create-folder', async (req, res) => {
+    try {
+        const { name, path } = req.body;
+        if (!name) {
+            return res.status(400).json({ error: 'Folder name is required' });
+        }
+        // Normalize the path to ensure it ends with a slash if not empty
+        const normalizedPath = path && !path.endsWith('/') ? `${path}/` : path || '';
+        // Create the folder marker
+        const folderKey = `${normalizedPath}${name}/.folder`;
+        await r2Service_1.r2Service.uploadFile(folderKey, '', 'application/octet-stream');
+        logger_1.logger.info(`Created folder: ${folderKey}`);
+        res.status(201).json({
+            message: 'Folder created successfully',
+            name,
+            path: normalizedPath,
+            fullPath: `${normalizedPath}${name}/`
+        });
+    }
+    catch (error) {
+        logger_1.logger.error('Error creating folder:', { error });
+        res.status(500).json({ error: error.message });
+    }
+});
 exports.default = router;
 //# sourceMappingURL=adminRoutes.js.map

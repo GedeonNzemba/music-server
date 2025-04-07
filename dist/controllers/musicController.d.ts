@@ -20,5 +20,17 @@ export declare class MusicController {
      * Download a song
      */
     downloadSong(req: Request, res: Response): Promise<void>;
+    /**
+     * List all artists
+     */
+    listArtists(req: Request, res: Response): Promise<void>;
+    /**
+     * Get albums by artist
+     */
+    getAlbumsByArtist(req: Request, res: Response): Promise<void>;
+    /**
+     * Get songs by artist
+     */
+    getSongsByArtist(req: Request, res: Response): Promise<void>;
 }
 export declare const musicController: MusicController;

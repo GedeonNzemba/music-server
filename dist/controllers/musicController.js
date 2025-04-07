@@ -100,6 +100,52 @@ class MusicController {
             res.status(500).json({ error: 'Failed to download song', details: error.message });
         }
     }
+    /**
+     * List all artists
+     */
+    async listArtists(req, res) {
+        try {
+            const artists = await r2Service_1.r2Service.listArtists();
+            res.json(artists);
+        }
+        catch (error) {
+            logger_1.logger.error('Error listing artists', { error });
+            res.status(500).json({ error: error.message });
+        }
+    }
+    /**
+     * Get albums by artist
+     */
+    async getAlbumsByArtist(req, res) {
+        try {
+            const { name } = req.params;
+            const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+            const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+            const artistAlbums = await r2Service_1.r2Service.getAlbumsByArtist(name, limit, offset);
+            res.json(artistAlbums);
+        }
+        catch (error) {
+            logger_1.logger.error(`Error getting albums for artist ${req.params.name}`, { error });
+            res.status(500).json({ error: error.message });
+        }
+    }
+    /**
+     * Get songs by artist
+     */
+    async getSongsByArtist(req, res) {
+        try {
+            const { name } = req.params;
+            const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+            const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+            const shuffle = req.query.shuffle === 'true';
+            const artistSongs = await r2Service_1.r2Service.getSongsByArtist(name, limit, offset, shuffle);
+            res.json(artistSongs);
+        }
+        catch (error) {
+            logger_1.logger.error(`Error getting songs for artist ${req.params.name}`, { error });
+            res.status(500).json({ error: error.message });
+        }
+    }
 }
 exports.MusicController = MusicController;
 // Export a singleton instance
