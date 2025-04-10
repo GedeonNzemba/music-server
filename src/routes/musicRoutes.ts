@@ -59,4 +59,14 @@ router.get('/artists/:name', musicController.getAlbumsByArtist.bind(musicControl
  */
 router.get('/artists/:name/songs', musicController.getSongsByArtist.bind(musicController));
 
+/**
+ * @route   GET /api/music/search
+ * @desc    Search for songs by metadata (title, artist, album, genre, year, language)
+ * @access  Public
+ * @query   q=<search_term>
+ * @query   limit=<number> (optional, default: 20) - Number of results per page
+ * @query   offset=<number> (optional, default: 0) - Starting index for results
+ */
+router.get('/search', musicController.searchSongs.bind(musicController));
+
 export default router;

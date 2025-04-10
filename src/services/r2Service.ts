@@ -315,26 +315,33 @@ export class R2Service {
           const albumName = parts[0];
           const songTitle = parts[1].replace(/\.(mp3|wav)$/i, '');
 
-          // If we don't have artist info for this album yet, try to get it from metadata
+          // Get artist info primarily from cached album.json data
           let artist = albumArtists[albumName];
-          if (!artist) {
-            try {
-              const metadata = await this.getMetadata(file.Key!);
-              if (metadata.artist) {
-                artist = metadata.artist;
-                // Cache the artist for other songs in this album
-                albumArtists[albumName] = artist;
-              }
-            } catch (error) {
-              logger.error(`Error getting metadata for ${file.Key}`, { error });
+          let songMetadata: Metadata | undefined = undefined; // Define variable to hold metadata
+
+          // Always try to fetch metadata for every song
+          try {
+            // Explicitly type the result of getMetadata
+            const fetchedMetadata = await this.getMetadata(file.Key!) as Metadata;
+            songMetadata = fetchedMetadata; // Store the fetched metadata
+            
+            // If artist wasn't found in album.json, try getting it from metadata
+            if (!artist && fetchedMetadata.artist) {
+              artist = fetchedMetadata.artist;
+              // Cache the artist for other songs in this album if found via metadata
+              albumArtists[albumName] = artist;
             }
+          } catch (error) {
+            logger.error(`Error getting metadata for ${file.Key}`, { error });
+            // Continue without metadata if fetching fails
           }
 
           return {
             title: songTitle,
             album: albumName,
             albumImage: albumImages[albumName] || null,
-            artist: artist || null,
+            artist: artist || null, // Use artist from album.json or metadata
+            metadata: songMetadata, // Include the fetched metadata here
             url: `${this.publicUrl}/${file.Key}`,
             key: file.Key!,
             size: file.Size,

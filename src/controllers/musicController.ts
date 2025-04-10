@@ -161,6 +161,61 @@ export class MusicController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  /**
+   * Search songs
+   */
+  async searchSongs(req: Request, res: Response): Promise<void> {
+    try {
+      const query = req.query.q as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20; // Default limit: 20
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0; // Default offset: 0
+
+      if (!query) {
+        res.status(400).json({ error: 'Search query parameter "q" is required.' });
+        return;
+      }
+
+      // Fetch ALL songs first. Consider optimizing this later if performance is an issue.
+      // We pass undefined for limit/offset to listAllSongs to get everything.
+      const allSongsData = await r2Service.listAllSongs(undefined, 0, false);
+      const allSongs = allSongsData.songs;
+
+      const searchTerm = query.toLowerCase();
+
+      const filteredSongs = allSongs.filter(song => {
+        const titleMatch = song.title?.toLowerCase().includes(searchTerm);
+        const albumMatch = song.album?.toLowerCase().includes(searchTerm);
+        // Check both top-level artist and metadata artist
+        const artistMatch = 
+          song.artist?.toLowerCase().includes(searchTerm) || 
+          song.metadata?.artist?.toLowerCase().includes(searchTerm);
+        const genreMatch = song.metadata?.genre?.toLowerCase().includes(searchTerm);
+        const yearMatch = song.metadata?.year?.toString().includes(searchTerm); // Year might be stored as number or string
+        // Assuming 'language' might be a custom metadata field
+        const languageMatch = song.metadata?.language?.toLowerCase().includes(searchTerm); 
+
+        return titleMatch || albumMatch || artistMatch || genreMatch || yearMatch || languageMatch;
+      });
+      
+      // Get total count *before* pagination
+      const totalMatchedSongs = filteredSongs.length;
+
+      // Apply pagination to the filtered results
+      const paginatedSongs = filteredSongs.slice(offset, offset + limit);
+
+      res.json({ 
+        totalSongs: totalMatchedSongs, // Total number of songs matching the query
+        limit: limit,               // The limit used for this response
+        offset: offset,             // The offset used for this response
+        songs: paginatedSongs       // The songs for the current page
+      });
+
+    } catch (error: any) {
+      logger.error('Error searching songs', { query: req.query.q, error });
+      res.status(500).json({ error: 'Failed to search songs', details: error.message });
+    }
+  }
 }
 
 // Export a singleton instance
